@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Twin Dozer - teste</title>
+    <script src="gsap.min.js"></script>
+    <style>
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+      #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+      .scene { position: absolute; inset: 0; opacity: 0; overflow: hidden; }
+      .scene img {
+        position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+        filter: saturate(0.75) contrast(1.05) sepia(0.12);
+        will-change: transform;
+      }
+      #vignette {
+        position: absolute; inset: 0; pointer-events: none; z-index: 20;
+        background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55) 100%);
+      }
+      #captions {
+        position: absolute; left: 160px; right: 160px; bottom: 110px; z-index: 30;
+        text-align: center; font-family: "DejaVu Sans", Arial, sans-serif; font-weight: 700;
+        font-size: 64px; line-height: 1.2; color: #fff; letter-spacing: 0.5px;
+        text-shadow: 0 3px 0 #000, 0 0 18px rgba(0,0,0,0.85);
+      }
+      .line { position: absolute; left: 0; right: 0; bottom: 0; opacity: 0; display: flex; flex-wrap: wrap; justify-content: center; }
+      .w { opacity: 0; display: inline-block; margin: 0 0.12em; }
+      #black { position: absolute; inset: 0; background: #000; z-index: 50; opacity: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-width="1920" data-height="1080" data-start="0" data-duration="30">
+      <div class="scene" id="s1"><img src="assets/scene1.jpg" alt="" /></div>
+      <div class="scene" id="s2"><img src="assets/scene2.jpg" alt="" /></div>
+      <div class="scene" id="s3"><img src="assets/scene3.jpg" alt="" /></div>
+      <div class="scene" id="s4"><img src="assets/scene4.jpg" alt="" /></div>
+      <div class="scene" id="s5"><img src="assets/scene5.jpg" alt="" /></div>
+      <div id="vignette"></div>
+      <div id="captions"></div>
+      <div id="black"></div>
+
+      <!-- Placeholder sound bed: low diesel rumble (quieter for the first 5 s) and a deep hit on the final cut. -->
+      <audio id="sound" src="assets/sound.wav" data-start="0" data-duration="30" data-track-index="10" data-volume="1"></audio>
+    </div>
+
+    <script>
+      // ---- Narration / captions. Edit text and times here once the voice-over is recorded. ----
+      // Each line shows its words one by one between start and end (seconds).
+      const LINES = [
+        { start: 0.3, end: 2.6, text: "Two bulldozers. One blade." },
+        { start: 3.2, end: 4.8, text: "And one man driving both." }, // ~0.5 s pause after "One blade."
+        { start: 5.2, end: 10.6, text: "Two Caterpillar D9s, bolted side by side…" },
+        { start: 11.2, end: 16.6, text: "Caterpillar already built one of the most powerful…" },
+        { start: 17.2, end: 23.6, text: "The answer isn't just horsepower…" },
+        { start: 24.2, end: 29.0, text: "And in a minute, you'll see the first answer." },
+      ];
+
+      const cap = document.getElementById("captions");
+      const tl = gsap.timeline({ paused: true });
+
+      // ---- Scenes: hard cuts every ~5-6 s with slow Ken Burns moves ----
+      const cut = (id, t) => tl.set(id, { opacity: 1 }, t);
+      const hide = (id, t) => tl.set(id, { opacity: 0 }, t);
+      const img = (id) => id + " img";
+
+      // Scene 1 (0-5): slow zoom on the blade (lower area), then drift up to the operator.
+      cut("#s1", 0);
+      tl.fromTo(img("#s1"), { scale: 1.0, transformOrigin: "50% 80%" }, { scale: 1.12, duration: 2.8, ease: "none" }, 0);
+      tl.to(img("#s1"), { scale: 1.28, transformOrigin: "50% 25%", duration: 2.2, ease: "power1.inOut" }, 2.8);
+      hide("#s1", 5);
+
+      // Scene 2 (5-11): extreme close on the beam, then a cut to the whole blade at 8.2 s.
+      cut("#s2", 5);
+      tl.fromTo(img("#s2"), { scale: 1.6, transformOrigin: "50% 50%" }, { scale: 1.75, duration: 3.2, ease: "none" }, 5);
+      tl.set(img("#s2"), { scale: 1.0, transformOrigin: "50% 60%" }, 8.2);
+      tl.to(img("#s2"), { scale: 1.06, duration: 2.8, ease: "none" }, 8.2);
+      hide("#s2", 11);
+
+      // Scene 3 (11-17): side view, slow lateral push.
+      cut("#s3", 11);
+      tl.fromTo(img("#s3"), { scale: 1.1, xPercent: -2 }, { scale: 1.1, xPercent: 2, duration: 6, ease: "none" }, 11);
+      hide("#s3", 17);
+
+      // Scene 4 (17-24): the waiting line, slow pull back.
+      cut("#s4", 17);
+      tl.fromTo(img("#s4"), { scale: 1.15 }, { scale: 1.0, duration: 7, ease: "none" }, 17);
+      hide("#s4", 24);
+
+      // Scene 5 (24-30): twin machine head-on, slow zoom, hard cut to black on the hit.
+      cut("#s5", 24);
+      tl.fromTo(img("#s5"), { scale: 1.0, transformOrigin: "50% 55%" }, { scale: 1.15, duration: 5.6, ease: "none" }, 24);
+      tl.set("#black", { opacity: 1 }, 29.6);
+
+      // ---- Word-by-word captions ----
+      LINES.forEach((l, i) => {
+        const line = document.createElement("div");
+        line.className = "line";
+        const words = l.text.split(" ");
+        line.innerHTML = words.map((w) => `<span class="w">${w}</span>`).join(" ");
+        cap.appendChild(line);
+        const step = (l.end - l.start) / words.length;
+        tl.set(line, { opacity: 1 }, l.start);
+        line.querySelectorAll(".w").forEach((el, j) => {
+          tl.fromTo(el, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.12, ease: "power2.out" }, l.start + j * step);
+        });
+        const next = LINES[i + 1];
+        tl.set(line, { opacity: 0 }, next ? next.start - 0.05 : 29.6);
+      });
+
+      tl.set({}, {}, 30); // pin total length
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
